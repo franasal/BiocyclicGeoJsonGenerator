@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-from io import StringIO, BytesIO
+from io import StringIO
 from dotenv import load_dotenv
 
-# Load password from environment
+# --- Load password from Streamlit secrets or .env ---
 load_dotenv()
 PASSWORD = os.getenv("APP_PASSWORD")
 
@@ -28,7 +28,7 @@ def check_password():
     else:
         return True
 
-# --- GeoJSON generator ---
+# --- GeoJSON logic ---
 def create_feature(row, lon, lat, icon_url, certified_status):
     return {
         "type": "Feature",
@@ -61,7 +61,6 @@ def generate_geojson(excel_file):
 
     for _, row in df.iterrows():
         lon, lat = row['Coordinates Lon'], row['Coordinates Lat']
-
         try:
             lon, lat = float(lon), float(lat)
         except ValueError:
@@ -71,57 +70,53 @@ def generate_geojson(excel_file):
 
         if cert_status == 'certified':
             icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_green_white-background_-201x300.png"
-            certified_features.append(
-                create_feature(row, lon, lat, icon_url, "yes")
-            )
+            certified_features.append(create_feature(row, lon, lat, icon_url, "yes"))
         else:
             icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png"
-            non_certified_features.append(
-                create_feature(row, lon, lat, icon_url, cert_status)
-            )
+            non_certified_features.append(create_feature(row, lon, lat, icon_url, cert_status))
 
     geojson1 = {"type": "FeatureCollection", "features": certified_features}
     geojson2 = {"type": "FeatureCollection", "features": non_certified_features}
 
     return geojson1, geojson2
 
-# --- Streamlit app ---
+# --- App ---
 if check_password():
-    st.title("Excel to GeoJSON Converter")
+    st.title("Biozyklisch-Vegan GeoJSON Generator")
 
     uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
     if uploaded_file:
         st.success("File uploaded successfully.")
-        st.info("Processing file...")
 
-        try:
-            geojson_certified, geojson_non_certified = generate_geojson(uploaded_file)
+        if st.button("Process File"):
+            try:
+                geojson_certified, geojson_non_certified = generate_geojson(uploaded_file)
 
-            # Convert to string buffers
-            buffer1 = StringIO()
-            json.dump(geojson_certified, buffer1, ensure_ascii=False, indent=2)
-            buffer1.seek(0)
+                # Convert to string buffers
+                buffer1 = StringIO()
+                json.dump(geojson_certified, buffer1, ensure_ascii=False, indent=2)
+                buffer1.seek(0)
 
-            buffer2 = StringIO()
-            json.dump(geojson_non_certified, buffer2, ensure_ascii=False, indent=2)
-            buffer2.seek(0)
+                buffer2 = StringIO()
+                json.dump(geojson_non_certified, buffer2, ensure_ascii=False, indent=2)
+                buffer2.seek(0)
 
-            st.download_button(
-                label="Download Certified GeoJSON",
-                data=buffer1,
-                file_name="certified_certifications.geojson",
-                mime="application/geo+json"
-            )
+                st.download_button(
+                    label="⬇ Download Certified GeoJSON",
+                    data=buffer1,
+                    file_name="certified_certifications.geojson",
+                    mime="application/geo+json"
+                )
 
-            st.download_button(
-                label="Download Non-Certified GeoJSON",
-                data=buffer2,
-                file_name="non_certified_certifications.geojson",
-                mime="application/geo+json"
-            )
+                st.download_button(
+                    label="⬇ Download Non-Certified GeoJSON",
+                    data=buffer2,
+                    file_name="non_certified_certifications.geojson",
+                    mime="application/geo+json"
+                )
 
-            st.success("Files generated successfully!")
+                st.success("Files generated successfully!")
 
-        except Exception as e:
-            st.error(f"❌ Error processing file: {e}")
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
