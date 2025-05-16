@@ -5,7 +5,7 @@ import os
 from io import BytesIO
 from dotenv import load_dotenv
 
-# --- Load password from Streamlit secrets or .env ---
+# --- Load password from environment (.env or Streamlit secrets) ---
 load_dotenv()
 PASSWORD = os.getenv("APP_PASSWORD")
 
@@ -28,7 +28,7 @@ def check_password():
     else:
         return True
 
-# --- GeoJSON logic ---
+# --- Create GeoJSON feature ---
 def create_feature(row, lon, lat, icon_url, certified_status):
     return {
         "type": "Feature",
@@ -50,7 +50,9 @@ def create_feature(row, lon, lat, icon_url, certified_status):
         }
     }
 
+# --- Main processing function ---
 def generate_geojson(excel_file):
+    warnings = []
     xls = pd.ExcelFile(excel_file, engine='openpyxl')
     sheet_names = xls.sheet_names
     second_sheet_name = sheet_names[1]
@@ -64,7 +66,8 @@ def generate_geojson(excel_file):
         try:
             lon, lat = float(lon), float(lat)
         except ValueError:
-            continue  # Skip invalid coordinates
+            warnings.append(f"⚠️ Invalid coordinates for '{row['Title']}' ({row['Address']}). Skipping entry.")
+            continue
 
         cert_status = row['Certification Status'].lower()
 
@@ -84,36 +87,31 @@ def generate_geojson(excel_file):
     geojson1 = {"type": "FeatureCollection", "features": certified_features}
     geojson2 = {"type": "FeatureCollection", "features": non_certified_features}
 
-    return geojson1, geojson2
+    return geojson1, geojson2, warnings
 
 # --- Streamlit App ---
 if check_password():
-    st.title("Biozyklisch-Vegan GeoJSON Generator")
+    st.title("🌱 Biozyklisch-Vegan GeoJSON Generator")
 
     uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx"])
 
     if uploaded_file:
-        st.success("File uploaded successfully.")
+        st.success("✅ File uploaded successfully.")
 
-        if st.button("Process File"):
-            st.info("Processing…")
+        if st.button("🚀 Process File"):
+            st.info("Processing...")
             try:
-                geojson_certified, geojson_non_certified = generate_geojson(uploaded_file)
+                geojson_certified, geojson_non_certified, warnings = generate_geojson(uploaded_file)
 
-                # Prepare BytesIO buffers for download
-                buffer1 = BytesIO()
-                buffer1.write(
-                    json.dumps(geojson_certified, ensure_ascii=False, indent=2)
-                    .encode("utf-8")
-                )
-                buffer1.seek(0)
+                # Show warnings (if any)
+                if warnings:
+                    st.warning("Some entries were skipped:")
+                    for warn in warnings:
+                        st.markdown(f"- {warn}")
 
-                buffer2 = BytesIO()
-                buffer2.write(
-                    json.dumps(geojson_non_certified, ensure_ascii=False, indent=2)
-                    .encode("utf-8")
-                )
-                buffer2.seek(0)
+                # Prepare GeoJSON files for download
+                buffer1 = BytesIO(json.dumps(geojson_certified, ensure_ascii=False, indent=2).encode("utf-8"))
+                buffer2 = BytesIO(json.dumps(geojson_non_certified, ensure_ascii=False, indent=2).encode("utf-8"))
 
                 st.download_button(
                     label="⬇ Download Certified GeoJSON",
@@ -129,7 +127,7 @@ if check_password():
                     mime="application/geo+json"
                 )
 
-                st.success("Files generated successfully!")
+                st.success("🎉 Files generated successfully!")
 
             except Exception as e:
-                st.error(f"❌ Error processing file: {e}")
+                st.error(f"❌ Error during processing: {e}")
