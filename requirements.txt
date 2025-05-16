@@ -1,0 +1,2 @@
+python-dotenv
+openpyxl  # Needed to read Excel files
