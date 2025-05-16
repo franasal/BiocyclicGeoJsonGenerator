@@ -141,14 +141,14 @@ def main():
                 st.download_button(
                     label="⬇ Download Certified GeoJSON",
                     data=buffer1,
-                    file_name="certified_certifications.geojson",
+                    file_name="certified.geojson",
                     mime="application/geo+json"
                 )
 
                 st.download_button(
                     label="⬇ Download Non-Certified GeoJSON",
                     data=buffer2,
-                    file_name="non_certified_certifications.geojson",
+                    file_name="non_certified.geojson",
                     mime="application/geo+json"
                 )
 
