@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
-from io import StringIO
+from io import BytesIO
 from dotenv import load_dotenv
 
 # --- Load password from Streamlit secrets or .env ---
@@ -69,10 +69,16 @@ def generate_geojson(excel_file):
         cert_status = row['Certification Status'].lower()
 
         if cert_status == 'certified':
-            icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_green_white-background_-201x300.png"
+            icon_url = (
+                "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/"
+                "WEB__EN_Biocyclic_Vegan_Agriculture_green_white-background_-201x300.png"
+            )
             certified_features.append(create_feature(row, lon, lat, icon_url, "yes"))
         else:
-            icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png"
+            icon_url = (
+                "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/"
+                "WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png"
+            )
             non_certified_features.append(create_feature(row, lon, lat, icon_url, cert_status))
 
     geojson1 = {"type": "FeatureCollection", "features": certified_features}
@@ -80,7 +86,7 @@ def generate_geojson(excel_file):
 
     return geojson1, geojson2
 
-# --- App ---
+# --- Streamlit App ---
 if check_password():
     st.title("Biozyklisch-Vegan GeoJSON Generator")
 
@@ -90,16 +96,23 @@ if check_password():
         st.success("File uploaded successfully.")
 
         if st.button("Process File"):
+            st.info("Processing…")
             try:
                 geojson_certified, geojson_non_certified = generate_geojson(uploaded_file)
 
-                # Convert to string buffers
-                buffer1 = StringIO()
-                json.dump(geojson_certified, buffer1, ensure_ascii=False, indent=2)
+                # Prepare BytesIO buffers for download
+                buffer1 = BytesIO()
+                buffer1.write(
+                    json.dumps(geojson_certified, ensure_ascii=False, indent=2)
+                    .encode("utf-8")
+                )
                 buffer1.seek(0)
 
-                buffer2 = StringIO()
-                json.dump(geojson_non_certified, buffer2, ensure_ascii=False, indent=2)
+                buffer2 = BytesIO()
+                buffer2.write(
+                    json.dumps(geojson_non_certified, ensure_ascii=False, indent=2)
+                    .encode("utf-8")
+                )
                 buffer2.seek(0)
 
                 st.download_button(
@@ -119,4 +132,4 @@ if check_password():
                 st.success("Files generated successfully!")
 
             except Exception as e:
-                st.error(f"❌ Error: {e}")
+                st.error(f"❌ Error processing file: {e}")
