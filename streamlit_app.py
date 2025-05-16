@@ -2,34 +2,33 @@ import streamlit as st
 import pandas as pd
 import json
 import time
-import hashlib
 import traceback
+import hashlib
 from io import BytesIO
 
-# --- CONFIGURATION ---
-PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"  # 'password' hashed with SHA256
-
-# --- AUTHENTICATION ---
+# --- PASSWORD AUTHENTICATION ---
 def check_password():
-    def hash_password(password):
-        return hashlib.sha256(password.encode()).hexdigest()
+    def password_entered():
+        if hashlib.sha256(st.session_state["password"].encode()).hexdigest() == PASSWORD_HASH:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # remove password from session
+        else:
+            st.session_state["password_correct"] = False
 
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
+    if "password_correct" not in st.session_state:
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        st.error("😕 Incorrect password")
+        return False
+    else:
+        return True
 
-    if not st.session_state.authenticated:
-        with st.form("Login"):
-            password = st.text_input("Enter password", type="password")
-            submitted = st.form_submit_button("Login")
-            if submitted:
-                if hash_password(password) == PASSWORD_HASH:
-                    st.session_state.authenticated = True
-                else:
-                    st.error("❌ Incorrect password")
+# Password hash for "password"
+PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
 
-    return st.session_state.authenticated
-
-# --- GEOJSON PROCESSING ---
+# --- GEOJSON PROCESSING FUNCTIONS ---
 def create_feature(row, lon, lat, icon_url, certified_status):
     return {
         "type": "Feature",
@@ -90,10 +89,9 @@ def generate_geojson(uploaded_file):
 
     return geojson_certified, geojson_non_certified, warnings
 
-# --- MAIN APP ---
+# --- MAIN STREAMLIT APP ---
 def main():
     st.set_page_config(page_title="GeoJSON Generator", page_icon="🌍")
-
     st.title("🌱 Biozyklisch-Vegan GeoJSON Generator")
 
     if not check_password():
