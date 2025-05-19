@@ -7,27 +7,29 @@ import hashlib
 from io import BytesIO
 import zipfile
 
-# --- PASSWORD AUTHENTICATION ---
+# --- Load password from environment (.env or Streamlit secrets) ---
+load_dotenv()
+PASSWORD = os.getenv("APP_PASSWORD")
+
+# --- Password protection ---
 def check_password():
     def password_entered():
-        if hashlib.sha256(st.session_state["password"].encode()).hexdigest() == PASSWORD_HASH:
+        if st.session_state["password"] == PASSWORD:
             st.session_state["password_correct"] = True
             del st.session_state["password"]
         else:
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        st.text_input("Enter password", type="password", on_change=password_entered, key="password")
         return False
     elif not st.session_state["password_correct"]:
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        st.error("😕 Incorrect password")
+        st.text_input("Enter password", type="password", on_change=password_entered, key="password")
+        st.error("Incorrect password")
         return False
     else:
         return True
-
-PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"  # 'password'
-
+        
 # --- GEOJSON FUNCTIONS ---
 def create_feature(row, lon, lat, icon_url, certified_status):
     return {
@@ -91,8 +93,8 @@ def generate_geojson(uploaded_file):
 def create_zip(geojson1, geojson2):
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.writestr("certified_certifications.geojson", json.dumps(geojson1, indent=2, ensure_ascii=False))
-        zip_file.writestr("non_certified_certifications.geojson", json.dumps(geojson2, indent=2, ensure_ascii=False))
+        zip_file.writestr("certified.geojson", json.dumps(geojson1, indent=2, ensure_ascii=False))
+        zip_file.writestr("non_certified.geojson", json.dumps(geojson2, indent=2, ensure_ascii=False))
     zip_buffer.seek(0)
     return zip_buffer
 
