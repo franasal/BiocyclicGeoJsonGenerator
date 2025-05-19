@@ -6,6 +6,8 @@ import traceback
 import hashlib
 from io import BytesIO
 import zipfile
+import os
+from dotenv import load_dotenv
 
 # --- Load password from environment (.env or Streamlit secrets) ---
 load_dotenv()
