@@ -5,6 +5,7 @@ import time
 import traceback
 import hashlib
 from io import BytesIO
+import zipfile
 
 # --- PASSWORD AUTHENTICATION ---
 def check_password():
@@ -25,7 +26,7 @@ def check_password():
     else:
         return True
 
-PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"  # 'password'
 
 # --- GEOJSON FUNCTIONS ---
 def create_feature(row, lon, lat, icon_url, certified_status):
@@ -87,6 +88,14 @@ def generate_geojson(uploaded_file):
 
     return geojson_certified, geojson_non_certified, warnings
 
+def create_zip(geojson1, geojson2):
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr("certified_certifications.geojson", json.dumps(geojson1, indent=2, ensure_ascii=False))
+        zip_file.writestr("non_certified_certifications.geojson", json.dumps(geojson2, indent=2, ensure_ascii=False))
+    zip_buffer.seek(0)
+    return zip_buffer
+
 # --- MAIN APP ---
 def main():
     st.set_page_config(page_title="GeoJSON Generator", page_icon="🌍")
@@ -103,23 +112,18 @@ def main():
         if st.button("🚀 Process File"):
             try:
                 geojson_certified, geojson_non_certified, warnings = generate_geojson(uploaded_file)
+                zip_buffer = create_zip(geojson_certified, geojson_non_certified)
 
-                # Convert to BytesIO and store in session
-                buffer1 = BytesIO(json.dumps(geojson_certified, ensure_ascii=False, indent=2).encode("utf-8"))
-                buffer2 = BytesIO(json.dumps(geojson_non_certified, ensure_ascii=False, indent=2).encode("utf-8"))
-
-                st.session_state["buffer_certified"] = buffer1
-                st.session_state["buffer_non_certified"] = buffer2
+                st.session_state["zip_buffer"] = zip_buffer
                 st.session_state["warnings"] = warnings
                 st.session_state["processed"] = True
 
-                st.success("🎉 Files generated successfully!")
+                st.success("🎉 Files generated and packed into ZIP!")
 
             except Exception:
                 st.error("❌ An error occurred during processing.")
                 st.code(traceback.format_exc())
 
-    # If data is processed, show downloads
     if st.session_state.get("processed"):
         if st.session_state.get("warnings"):
             st.warning("Some entries were skipped:")
@@ -127,17 +131,10 @@ def main():
                 st.markdown(f"- {warn}")
 
         st.download_button(
-            label="⬇ Download Certified GeoJSON",
-            data=st.session_state["buffer_certified"],
-            file_name="certified_certifications.geojson",
-            mime="application/geo+json"
-        )
-
-        st.download_button(
-            label="⬇ Download Non-Certified GeoJSON",
-            data=st.session_state["buffer_non_certified"],
-            file_name="non_certified_certifications.geojson",
-            mime="application/geo+json"
+            label="⬇ Download GeoJSON ZIP Archive",
+            data=st.session_state["zip_buffer"],
+            file_name="biozyklisch_vegan_certifications.zip",
+            mime="application/zip"
         )
 
 if __name__ == "__main__":
