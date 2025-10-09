@@ -97,10 +97,16 @@ def publish_to_github(geojson_certified, geojson_non_certified, commit_message="
     for path, content in files_to_upload.items():
         try:
             existing_file = repo.get_contents(path, ref=GITHUB_BRANCH)
-            repo.update_file(path, commit_message, content, existing_file.sha, branch=GITHUB_BRANCH)
-        except Exception:
-            # File does not exist, create it
+            old_content = existing_file.decoded_content.decode()
+            if old_content.strip() != content.strip():
+                repo.update_file(path, commit_message, content, existing_file.sha, branch=GITHUB_BRANCH)
+                st.info(f"✅ Updated {path}")
+            else:
+                st.info(f"ℹ️ No changes for {path}")
+        except Exception as e:
+            st.warning(f"📄 Creating new file {path}: {e}")
             repo.create_file(path, commit_message, content, branch=GITHUB_BRANCH)
+
 
 # --- MAIN APP ---
 def main():
