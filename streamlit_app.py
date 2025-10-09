@@ -4,16 +4,14 @@ import json
 import time
 import traceback
 import os
-from dotenv import load_dotenv
 from github import Github
 
-# --- Load environment variables (.env or Streamlit secrets) ---
-load_dotenv()
-PASSWORD = os.getenv("APP_PASSWORD")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")       # GitHub Personal Access Token
-GITHUB_REPO = os.getenv("GITHUB_REPO")         # e.g., "username/repo-name"
-GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")  # Branch for GitHub Pages
-GITHUB_PATH = os.getenv("GITHUB_PATH", "geojson")   # Folder to store GeoJSON
+# --- Load environment variables (Streamlit secrets or .env) ---
+PASSWORD = os.getenv("APP_PASSWORD")             # Streamlit secret: APP_PASSWORD
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")        # Streamlit secret: GITHUB_TOKEN
+GITHUB_REPO = os.getenv("GITHUB_REPO")          # e.g., "username/repo-name"
+GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "gh-pages")  # Default to gh-pages
+GITHUB_PATH = os.getenv("GITHUB_PATH", "geojson")       # Folder to store GeoJSON
 
 # --- Password protection ---
 def check_password():
@@ -79,38 +77,30 @@ def generate_geojson(uploaded_file):
             icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png"
             non_certified_features.append(create_feature(row, lon, lat, icon_url, cert_status))
 
-        time.sleep(0.2)  # slight delay to avoid throttling if needed
+        time.sleep(0.1)  # slight delay
 
     geojson_certified = {"type": "FeatureCollection", "features": certified_features}
     geojson_non_certified = {"type": "FeatureCollection", "features": non_certified_features}
 
     return geojson_certified, geojson_non_certified, warnings
 
-# --- GITHUB PUBLISH FUNCTION (overwrite old files) ---
+# --- GITHUB PUBLISH FUNCTION ---
 def publish_to_github(geojson_certified, geojson_non_certified, commit_message="Update GeoJSON files"):
     g = Github(GITHUB_TOKEN)
     repo = g.get_repo(GITHUB_REPO)
 
-    # Prepare new files content
     files_to_upload = {
         f"{GITHUB_PATH}/certified.geojson": json.dumps(geojson_certified, indent=2, ensure_ascii=False),
         f"{GITHUB_PATH}/non_certified.geojson": json.dumps(geojson_non_certified, indent=2, ensure_ascii=False)
     }
 
-    # List existing files in the folder
-    try:
-        contents = repo.get_contents(GITHUB_PATH, ref=GITHUB_BRANCH)
-        for file in contents:
-            # Delete old files
-            repo.delete_file(file.path, f"Delete old file {file.name}", file.sha, branch=GITHUB_BRANCH)
-    except Exception:
-        # Folder may not exist yet, ignore
-        pass
-
-    # Upload new files
     for path, content in files_to_upload.items():
-        repo.create_file(path, commit_message, content, branch=GITHUB_BRANCH)
-
+        try:
+            existing_file = repo.get_contents(path, ref=GITHUB_BRANCH)
+            repo.update_file(path, commit_message, content, existing_file.sha, branch=GITHUB_BRANCH)
+        except Exception:
+            # File does not exist, create it
+            repo.create_file(path, commit_message, content, branch=GITHUB_BRANCH)
 
 # --- MAIN APP ---
 def main():
