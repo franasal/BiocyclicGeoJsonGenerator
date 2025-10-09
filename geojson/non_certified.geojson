@@ -75,6 +75,31 @@
         "certification_status": "certification pending",
         "description": "Situated in South Africa’s Klein Karoo near Vanwyksdorp, Ricky’s Drift is both a regenerative veganic farm and a dedicated animal sanctuary. Under the guidance of Louise, who has stewarded the land through over 15 years of no-till, restorative agriculture, the farm is pioneering a unique path: it is the first animal sanctuary-based structure in the world to undergo biocyclic vegan certification.\n\nRicky’s Drift is preparing for biocyclic vegan certification."
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          38.64012572780204,
+          -4.288301601808463
+        ]
+      },
+      "properties": {
+        "name": "PA-Rural Cooperative",
+        "iconUrl": "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png",
+        "iconSize": [
+          40,
+          60
+        ],
+        "certified": "certification pending",
+        "website": "",
+        "email": "https://www.biocyclic-vegan.org/partners/producers/pa-rural-cooperative/",
+        "social": "",
+        "certifications": "",
+        "certification_status": "certification pending",
+        "description": "PA-Rural Cooperative (Barreira, Ceará, Brazil)\nPioneering biocyclic vegan cashew cultivation in northeastern Brazil, PA-Rural unites 2,000 smallholder families transitioning to stock-free, regenerative farming. With Brazil’s first phytoponic composting facility and a modernized zero-waste cashew processing plant, the cooperative promotes soil restoration, biodiversity, and fair local livelihoods.\n\nPA-Rural is preparing for biocyclic vegan certification."
+      }
     }
   ]
 }
