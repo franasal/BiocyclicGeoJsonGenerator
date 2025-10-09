@@ -3,15 +3,17 @@ import pandas as pd
 import json
 import time
 import traceback
-import hashlib
-from io import BytesIO
-import zipfile
 import os
 from dotenv import load_dotenv
+from github import Github
 
-# --- Load password from environment (.env or Streamlit secrets) ---
+# --- Load environment variables (.env or Streamlit secrets) ---
 load_dotenv()
 PASSWORD = os.getenv("APP_PASSWORD")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")       # GitHub Personal Access Token
+GITHUB_REPO = os.getenv("GITHUB_REPO")         # e.g., "username/repo-name"
+GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")  # Branch for GitHub Pages
+GITHUB_PATH = os.getenv("GITHUB_PATH", "geojson")   # Folder to store GeoJSON
 
 # --- Password protection ---
 def check_password():
@@ -31,15 +33,12 @@ def check_password():
         return False
     else:
         return True
-        
+
 # --- GEOJSON FUNCTIONS ---
 def create_feature(row, lon, lat, icon_url, certified_status):
     return {
         "type": "Feature",
-        "geometry": {
-            "type": "Point",
-            "coordinates": [lon, lat]
-        },
+        "geometry": {"type": "Point", "coordinates": [lon, lat]},
         "properties": {
             "name": row['Title'],
             "iconUrl": icon_url,
@@ -75,35 +74,48 @@ def generate_geojson(uploaded_file):
 
         if cert_status == 'certified':
             icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_green_white-background_-201x300.png"
-            certified_status = "yes"
-            certified_features.append(
-                create_feature(row, lon, lat, icon_url, certified_status)
-            )
+            certified_features.append(create_feature(row, lon, lat, icon_url, "yes"))
         else:
             icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png"
-            non_certified_features.append(
-                create_feature(row, lon, lat, icon_url, cert_status)
-            )
+            non_certified_features.append(create_feature(row, lon, lat, icon_url, cert_status))
 
-        time.sleep(1)
+        time.sleep(0.2)  # slight delay to avoid throttling if needed
 
     geojson_certified = {"type": "FeatureCollection", "features": certified_features}
     geojson_non_certified = {"type": "FeatureCollection", "features": non_certified_features}
 
     return geojson_certified, geojson_non_certified, warnings
 
-def create_zip(geojson1, geojson2):
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
-        zip_file.writestr("certified.geojson", json.dumps(geojson1, indent=2, ensure_ascii=False))
-        zip_file.writestr("non_certified.geojson", json.dumps(geojson2, indent=2, ensure_ascii=False))
-    zip_buffer.seek(0)
-    return zip_buffer
+# --- GITHUB PUBLISH FUNCTION (overwrite old files) ---
+def publish_to_github(geojson_certified, geojson_non_certified, commit_message="Update GeoJSON files"):
+    g = Github(GITHUB_TOKEN)
+    repo = g.get_repo(GITHUB_REPO)
+
+    # Prepare new files content
+    files_to_upload = {
+        f"{GITHUB_PATH}/certified.geojson": json.dumps(geojson_certified, indent=2, ensure_ascii=False),
+        f"{GITHUB_PATH}/non_certified.geojson": json.dumps(geojson_non_certified, indent=2, ensure_ascii=False)
+    }
+
+    # List existing files in the folder
+    try:
+        contents = repo.get_contents(GITHUB_PATH, ref=GITHUB_BRANCH)
+        for file in contents:
+            # Delete old files
+            repo.delete_file(file.path, f"Delete old file {file.name}", file.sha, branch=GITHUB_BRANCH)
+    except Exception:
+        # Folder may not exist yet, ignore
+        pass
+
+    # Upload new files
+    for path, content in files_to_upload.items():
+        repo.create_file(path, commit_message, content, branch=GITHUB_BRANCH)
+
 
 # --- MAIN APP ---
 def main():
-    st.set_page_config(page_title="GeoJSON Generator", page_icon="🌍")
-    st.title("🌱 Biozyklisch-Vegan GeoJSON Generator")
+    st.set_page_config(page_title="GeoJSON Publisher", page_icon="🌍")
+    st.title("🌱 Biozyklisch-Vegan GeoJSON Publisher")
 
     if not check_password():
         st.stop()
@@ -111,35 +123,22 @@ def main():
     uploaded_file = st.file_uploader("Upload your Excel file (.xlsx)", type=["xlsx"])
 
     if uploaded_file is not None:
-        st.success("✅ File uploaded. Click 'Process' to continue.")
+        st.success("✅ File uploaded. Click 'Publish' to continue.")
 
-        if st.button("🚀 Process File"):
+        if st.button("🚀 Publish to GitHub Pages"):
             try:
                 geojson_certified, geojson_non_certified, warnings = generate_geojson(uploaded_file)
-                zip_buffer = create_zip(geojson_certified, geojson_non_certified)
+                publish_to_github(geojson_certified, geojson_non_certified)
+                st.success("🎉 GeoJSON files published to GitHub Pages!")
 
-                st.session_state["zip_buffer"] = zip_buffer
-                st.session_state["warnings"] = warnings
-                st.session_state["processed"] = True
-
-                st.success("🎉 Files generated and packed into ZIP!")
+                if warnings:
+                    st.warning("Some entries were skipped:")
+                    for warn in warnings:
+                        st.markdown(f"- {warn}")
 
             except Exception:
-                st.error("❌ An error occurred during processing.")
+                st.error("❌ An error occurred during publishing.")
                 st.code(traceback.format_exc())
-
-    if st.session_state.get("processed"):
-        if st.session_state.get("warnings"):
-            st.warning("Some entries were skipped:")
-            for warn in st.session_state["warnings"]:
-                st.markdown(f"- {warn}")
-
-        st.download_button(
-            label="⬇ Download GeoJSON ZIP Archive",
-            data=st.session_state["zip_buffer"],
-            file_name="biozyklisch_vegan_certifications.zip",
-            mime="application/zip"
-        )
 
 if __name__ == "__main__":
     main()
