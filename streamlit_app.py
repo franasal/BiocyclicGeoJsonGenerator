@@ -7,13 +7,14 @@ import os
 from dotenv import load_dotenv
 from github import Github
 
-# --- Load environment variables (.env or Streamlit secrets) ---
+# --- Load env vars ---
 load_dotenv()
 PASSWORD = os.getenv("APP_PASSWORD")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")       # GitHub Personal Access Token
-GITHUB_REPO = os.getenv("GITHUB_REPO")         # e.g., "username/repo-name"
-GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")  # Branch for GitHub Pages
-GITHUB_PATH = os.getenv("GITHUB_PATH", "geojson")   # Folder to store GeoJSON
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_REPO = os.getenv("GITHUB_REPO")
+GITHUB_BRANCH = os.getenv("GITHUB_BRANCH", "main")
+GITHUB_PATH = os.getenv("GITHUB_PATH", "geojson")              # Production folder
+GITHUB_DEV_PATH = os.getenv("GITHUB_DEV_PATH", "geojson-dev")  # Dev/staging folder
 
 # --- Password protection ---
 def check_password():
@@ -34,7 +35,7 @@ def check_password():
     else:
         return True
 
-# --- GEOJSON FUNCTIONS ---
+# --- GEOJSON creation ---
 def create_feature(row, lon, lat, icon_url, certified_status):
     return {
         "type": "Feature",
@@ -79,40 +80,61 @@ def generate_geojson(uploaded_file):
             icon_url = "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png"
             non_certified_features.append(create_feature(row, lon, lat, icon_url, cert_status))
 
-        time.sleep(0.2)  # slight delay to avoid throttling if needed
+        time.sleep(0.2)
 
     geojson_certified = {"type": "FeatureCollection", "features": certified_features}
     geojson_non_certified = {"type": "FeatureCollection", "features": non_certified_features}
-
     return geojson_certified, geojson_non_certified, warnings
 
-# --- GITHUB PUBLISH FUNCTION (overwrite old files) ---
-def publish_to_github(geojson_certified, geojson_non_certified, commit_message="Update GeoJSON files"):
+# --- Generic publisher ---
+def publish_to_github(geojson_certified, geojson_non_certified, target_path, commit_message):
     g = Github(GITHUB_TOKEN)
     repo = g.get_repo(GITHUB_REPO)
 
-    # Prepare new files content
     files_to_upload = {
-        f"{GITHUB_PATH}/certified.geojson": json.dumps(geojson_certified, indent=2, ensure_ascii=False),
-        f"{GITHUB_PATH}/non_certified.geojson": json.dumps(geojson_non_certified, indent=2, ensure_ascii=False)
+        f"{target_path}/certified.geojson": json.dumps(geojson_certified, indent=2, ensure_ascii=False),
+        f"{target_path}/non_certified.geojson": json.dumps(geojson_non_certified, indent=2, ensure_ascii=False)
     }
 
-    # List existing files in the folder
+    # Delete old files
     try:
-        contents = repo.get_contents(GITHUB_PATH, ref=GITHUB_BRANCH)
+        contents = repo.get_contents(target_path, ref=GITHUB_BRANCH)
         for file in contents:
-            # Delete old files
             repo.delete_file(file.path, f"Delete old file {file.name}", file.sha, branch=GITHUB_BRANCH)
     except Exception:
-        # Folder may not exist yet, ignore
-        pass
+        pass  # Folder might not exist
 
-    # Upload new files
+    # Upload new
     for path, content in files_to_upload.items():
         repo.create_file(path, commit_message, content, branch=GITHUB_BRANCH)
 
+# --- Promote dev → prod ---
+def promote_dev_to_prod():
+    g = Github(GITHUB_TOKEN)
+    repo = g.get_repo(GITHUB_REPO)
 
-# --- MAIN APP ---
+    try:
+        dev_contents = repo.get_contents(GITHUB_DEV_PATH, ref=GITHUB_BRANCH)
+        # Delete old prod files
+        try:
+            prod_contents = repo.get_contents(GITHUB_PATH, ref=GITHUB_BRANCH)
+            for file in prod_contents:
+                repo.delete_file(file.path, f"Delete old prod file {file.name}", file.sha, branch=GITHUB_BRANCH)
+        except Exception:
+            pass
+
+        # Copy dev files to prod
+        for file in dev_contents:
+            file_content = file.decoded_content.decode("utf-8")
+            prod_path = file.path.replace(GITHUB_DEV_PATH, GITHUB_PATH, 1)
+            repo.create_file(prod_path, f"Promote {file.name} from dev to prod", file_content, branch=GITHUB_BRANCH)
+
+        return True
+    except Exception as e:
+        st.error(f"Failed to promote: {e}")
+        return False
+
+# --- Main App ---
 def main():
     st.set_page_config(page_title="GeoJSON Publisher", page_icon="🌍")
     st.title("🌱 Biozyklisch-Vegan GeoJSON Publisher")
@@ -123,22 +145,26 @@ def main():
     uploaded_file = st.file_uploader("Upload your Excel file (.xlsx)", type=["xlsx"])
 
     if uploaded_file is not None:
-        st.success("✅ File uploaded. Click 'Publish' to continue.")
+        st.success("✅ File uploaded. Click below to publish.")
 
-        if st.button("🚀 Publish to GitHub Pages"):
+        if st.button("🧪 Publish to Dev (Staging)"):
             try:
                 geojson_certified, geojson_non_certified, warnings = generate_geojson(uploaded_file)
-                publish_to_github(geojson_certified, geojson_non_certified)
-                st.success("🎉 GeoJSON files published to GitHub Pages!")
-
+                publish_to_github(geojson_certified, geojson_non_certified, GITHUB_DEV_PATH, "Publish to dev")
+                st.success(f"✅ Published to DEV folder `{GITHUB_DEV_PATH}` — review it on your dev pages URL.")
                 if warnings:
                     st.warning("Some entries were skipped:")
                     for warn in warnings:
                         st.markdown(f"- {warn}")
-
             except Exception:
-                st.error("❌ An error occurred during publishing.")
+                st.error("❌ Error during DEV publishing")
                 st.code(traceback.format_exc())
+
+    st.markdown("---")
+    st.subheader("🚀 Promote Reviewed Changes to Production")
+    if st.button("⬆️ Promote Dev → Production"):
+        if promote_dev_to_prod():
+            st.success("🎉 Dev files promoted to Production successfully!")
 
 if __name__ == "__main__":
     main()
