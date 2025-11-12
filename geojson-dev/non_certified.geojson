@@ -1,0 +1,130 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.365479,
+          56.2006144
+        ]
+      },
+      "properties": {
+        "name": "Villands  Vånga Veganträdgård ",
+        "iconUrl": "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png",
+        "iconSize": [
+          40,
+          60
+        ],
+        "certified": "certification pending",
+        "website": "www.vegantradgard.se",
+        "email": "vegantradgard@gmail.com\n",
+        "social": "www.facebook.com/Vegantradgard/\n@vanga.tradgardsmastare",
+        "certifications": " Biocyclic Vegan Certification Pending",
+        "certification_status": "certification pending",
+        "description": "Villands Vånga Veganträdgård is a small scale veganic farm in the south of Sweden, founded by Peter Albrecht who has managed the farm without animal inputs for 10 years. Peter supplies market vegetables to local consumers and restaurants, and he also grows seeds for a seed firm that sells seeds to local small scale farmers in Sweden. During the farming season he organises veganic farming courses, farm tours and other educational events.\n\nVillands Vånga Veganträdgård is preparing for biocyclic vegan certification."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.953056,
+          4.543056
+        ]
+      },
+      "properties": {
+        "name": "Finca Villa Paz",
+        "iconUrl": "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png",
+        "iconSize": [
+          40,
+          60
+        ],
+        "certified": "certification pending",
+        "website": "https://villapaz.org/",
+        "email": "info@villapaz.org",
+        "social": "",
+        "certifications": "Organic, Biocyclic Vegan Certification Pending",
+        "certification_status": "certification pending",
+        "description": "Finca Villa Paz was established in 1990 as a natural reserve high in the Andes mountains at an elevation of 2900 meters above sea level. In 1998 they decided to develop an organic vegetable production cultivating a great variety of vegetables suitable for the cold humid mountain climate. Together with other small farms in the region, they obtained the first organic certification awarded in Colombia in 2000. They have their own delivery infrastructure and sell to local restaurants and hotel chains. They also deliver their vegetables to many individuals and families in the city of Bogota.\n\nFinca Villa Paz is currently preparing for biocyclic vegan certification."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.4255953,
+          -33.7218339
+        ]
+      },
+      "properties": {
+        "name": "Ricky's Drift Farm",
+        "iconUrl": "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png",
+        "iconSize": [
+          40,
+          60
+        ],
+        "certified": "certification pending",
+        "website": "https://www.biocyclic-vegan.org/rickys-drift/",
+        "email": "",
+        "social": "",
+        "certifications": "",
+        "certification_status": "certification pending",
+        "description": "Situated in South Africa’s Klein Karoo near Vanwyksdorp, Ricky’s Drift is both a regenerative veganic farm and a dedicated animal sanctuary. Under the guidance of Louise, who has stewarded the land through over 15 years of no-till, restorative agriculture, the farm is pioneering a unique path: it is the first animal sanctuary-based structure in the world to undergo biocyclic vegan certification.\n\nRicky’s Drift is preparing for biocyclic vegan certification."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -38.64012572780204,
+          -4.288301601808463
+        ]
+      },
+      "properties": {
+        "name": "PA-Rural Cooperative",
+        "iconUrl": "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png",
+        "iconSize": [
+          40,
+          60
+        ],
+        "certified": "certification pending",
+        "website": "https://www.biocyclic-vegan.org/partners/producers/pa-rural-cooperative/",
+        "email": "https://www.biocyclic-vegan.org/partners/producers/pa-rural-cooperative/",
+        "social": "",
+        "certifications": "",
+        "certification_status": "certification pending",
+        "description": "PA-Rural Cooperative (Barreira, Ceará, Brazil)\nPioneering biocyclic vegan cashew cultivation in northeastern Brazil, PA-Rural unites 2,000 smallholder families transitioning to stock-free, regenerative farming. With Brazil’s first phytoponic composting facility and a modernized zero-waste cashew processing plant, the cooperative promotes soil restoration, biodiversity, and fair local livelihoods.\n\nPA-Rural is preparing for biocyclic vegan certification."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -38.64012572780204,
+          -4.288301601808463
+        ]
+      },
+      "properties": {
+        "name": "Test partner",
+        "iconUrl": "https://www.biocyclic-vegan.org/wp-content/uploads/2022/11/WEB__EN_Biocyclic_Vegan_Agriculture_red_white-background_-201x300.png",
+        "iconSize": [
+          40,
+          60
+        ],
+        "certified": "network partner",
+        "website": "https://www.biocyclic-vegan.org/partners/producers/pa-rural-cooperative/",
+        "email": "",
+        "social": "",
+        "certifications": "",
+        "certification_status": "network partner",
+        "description": ""
+      }
+    }
+  ]
+}
